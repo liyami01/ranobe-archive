@@ -1,0 +1,25 @@
+{
+  "ranobe": [
+    {
+      "id": 1,
+      "title": "Бездна магии",
+      "author": "Иванов Артём",
+      "genres": ["Фэнтези", "Исэкай"],
+      "cover": "covers/bezna-magii.jpg",
+      "files": [
+        { "name": "Том 1.epub", "size": "2.4 МБ", "url": "files/bezna-magii/tom-1.epub" },
+        { "name": "Том 2.epub", "size": "2.8 МБ", "url": "files/bezna-magii/tom-2.epub" }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Велесова тропа",
+      "author": "Петрова Мария",
+      "genres": ["Мистика", "Фэнтези"],
+      "cover": "covers/velesova-tropa.jpg",
+      "files": [
+        { "name": "Том 1.epub", "size": "1.9 МБ", "url": "files/velesova-tropa/tom-1.epub" }
+      ]
+    }
+  ]
+}
