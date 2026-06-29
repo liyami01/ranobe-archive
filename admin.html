@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Админка — Ранобэ Архив</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Onest:wght@300;400;500;600&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0A0A0A; --surface: #111111; --surface-2: #181818; --surface-3: #222222;
+      --border: rgba(255,255,255,0.07); --border-hover: rgba(255,255,255,0.15);
+      --text: #F0EEE8; --text-muted: #666; --text-faint: #333;
+      --accent: #E8E0D0; --accent-dim: rgba(232,224,208,0.1);
+      --green-text: #7ecf8e; --red-text: #e07070; --red: rgba(220,80,80,0.15);
+    }
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100vh; }
+
+    /* ── AUTH SCREEN ── */
+    #auth-screen {
+      position: fixed; inset: 0; background: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 999;
+    }
+    #auth-screen.gone { display: none; }
+    .auth-box { width: 100%; max-width: 340px; padding: 0 28px; display: flex; flex-direction: column; align-items: center; }
+    .auth-logo { width: 52px; height: 52px; background: var(--text); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px; }
+    .auth-logo svg { width: 30px; height: 30px; }
+    .auth-title { font-family: 'Onest', sans-serif; font-size: 22px; font-weight: 400; color: var(--text); margin-bottom: 6px; letter-spacing: -0.3px; }
+    .auth-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 32px; }
+    .auth-input-wrap { width: 100%; position: relative; margin-bottom: 12px; }
+    .auth-input-wrap i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 16px; pointer-events: none; }
+    .auth-input { width: 100%; background: var(--surface); border: 0.5px solid var(--border); border-radius: 8px; color: var(--text); font-family: 'Inter', sans-serif; font-size: 14px; padding: 12px 14px 12px 42px; outline: none; transition: border-color 0.15s; letter-spacing: 0.05em; }
+    .auth-input:focus { border-color: var(--border-hover); }
+    .auth-input.shake { animation: shake 0.35s ease; border-color: rgba(220,80,80,0.5); }
+    .auth-btn { width: 100%; background: var(--text); color: var(--bg); font-family: 'Onest', sans-serif; font-size: 14px; font-weight: 500; padding: 12px; border: none; border-radius: 8px; cursor: pointer; transition: opacity 0.15s; margin-bottom: 10px; }
+    .auth-btn:hover { opacity: 0.88; }
+    .auth-error { font-size: 12px; color: var(--red-text); min-height: 16px; text-align: center; }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
+
+    /* ── MAIN PAGE ── */
+    #main-page { display: none; }
+    #main-page.visible { display: block; }
+    .page { max-width: 800px; margin: 0 auto; padding: 0 28px 80px; }
+
+    header { padding: 28px 0 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 0.5px solid var(--border); margin-bottom: 40px; }
+    .logo { display: flex; align-items: center; gap: 14px; text-decoration: none; }
+    .logo-icon { width: 38px; height: 38px; background: var(--text); border-radius: 7px; display: flex; align-items: center; justify-content: center; }
+    .logo-icon svg { width: 22px; height: 22px; }
+    .logo-text .title { font-family: 'Onest', sans-serif; font-size: 17px; font-weight: 500; color: var(--text); letter-spacing: -0.3px; }
+    .logo-text .sub { font-size: 10px; color: var(--text-muted); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 1px; }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+    .back-btn { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); text-decoration: none; border: 0.5px solid var(--border); padding: 6px 12px; border-radius: 6px; transition: all 0.15s; }
+    .back-btn:hover { color: var(--text); border-color: var(--border-hover); }
+    .logout-btn { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); background: none; border: 0.5px solid var(--border); padding: 6px 12px; border-radius: 6px; cursor: pointer; transition: all 0.15s; font-family: 'Inter', sans-serif; }
+    .logout-btn:hover { color: var(--red-text); border-color: rgba(220,80,80,0.3); }
+
+    .tabs { display: flex; gap: 2px; margin-bottom: 32px; background: var(--surface); border: 0.5px solid var(--border); border-radius: 8px; padding: 3px; }
+    .tab-btn { flex: 1; padding: 9px 16px; border: none; border-radius: 6px; background: none; color: var(--text-muted); font-family: 'Inter', sans-serif; font-size: 13px; cursor: pointer; transition: all 0.15s; }
+    .tab-btn.active { background: var(--surface-3); color: var(--text); }
+    .tab-btn:hover:not(.active) { color: var(--text); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .section-title { font-family: 'Onest', sans-serif; font-size: 22px; font-weight: 400; color: var(--text); margin-bottom: 6px; letter-spacing: -0.3px; }
+    .section-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 28px; line-height: 1.6; }
+
+    .form-group { margin-bottom: 20px; }
+    label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 7px; letter-spacing: 0.04em; }
+    label span.req { color: var(--accent); margin-left: 2px; }
+    input[type="text"], input[type="number"], select, textarea { width: 100%; background: var(--surface); border: 0.5px solid var(--border); border-radius: 7px; color: var(--text); font-family: 'Inter', sans-serif; font-size: 13px; padding: 10px 14px; outline: none; transition: border-color 0.15s; appearance: none; }
+    input:focus, select:focus, textarea:focus { border-color: var(--border-hover); }
+    input::placeholder, textarea::placeholder { color: var(--text-faint); }
+    textarea { resize: vertical; min-height: 80px; }
+    select { cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+    .genre-picker { display: flex; flex-wrap: wrap; gap: 6px; }
+    .genre-pick-btn { background: var(--surface); border: 0.5px solid var(--border); color: var(--text-muted); font-family: 'Inter', sans-serif; font-size: 12px; padding: 6px 13px; border-radius: 20px; cursor: pointer; transition: all 0.15s; }
+    .genre-pick-btn:hover { border-color: var(--border-hover); color: var(--text); }
+    .genre-pick-btn.selected { background: var(--accent-dim); border-color: rgba(232,224,208,0.3); color: var(--accent); }
+    .genre-custom { display: flex; gap: 8px; margin-top: 8px; }
+    .genre-custom input { flex: 1; }
+    .genre-custom button { background: var(--surface-2); border: 0.5px solid var(--border); color: var(--text-muted); font-family: 'Inter', sans-serif; font-size: 12px; padding: 0 14px; border-radius: 7px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+    .genre-custom button:hover { color: var(--text); border-color: var(--border-hover); }
+
+    .file-drop { border: 0.5px dashed var(--border-hover); border-radius: 8px; padding: 28px; text-align: center; cursor: pointer; transition: all 0.15s; position: relative; }
+    .file-drop:hover, .file-drop.dragging { border-color: var(--accent); background: var(--accent-dim); }
+    .file-drop input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+    .file-drop i { font-size: 24px; color: var(--text-muted); margin-bottom: 8px; display: block; }
+    .file-drop p { font-size: 13px; color: var(--text-muted); }
+    .file-drop p span { color: var(--accent); }
+
+    .cover-preview-wrap { display: flex; gap: 16px; align-items: flex-start; }
+    .cover-preview { width: 80px; height: 120px; border-radius: 5px; overflow: hidden; background: var(--surface-2); border: 0.5px solid var(--border); flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+    .cover-preview img { width: 100%; height: 100%; object-fit: cover; display: none; }
+    .cover-preview i { font-size: 22px; color: var(--text-faint); }
+    .cover-preview-wrap .file-drop { flex: 1; }
+
+    .epub-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+    .epub-item { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 0.5px solid var(--border); border-radius: 7px; padding: 10px 14px; }
+    .epub-item i { font-size: 16px; color: var(--text-muted); flex-shrink: 0; }
+    .epub-item .ei-name { flex: 1; font-size: 13px; color: var(--text); min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .epub-item .ei-size { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+    .epub-item .ei-vol input { padding: 5px 8px; font-size: 12px; width: 120px; }
+    .epub-item .ei-remove { background: none; border: none; color: var(--text-faint); cursor: pointer; font-size: 16px; padding: 2px; border-radius: 4px; transition: color 0.12s; }
+    .epub-item .ei-remove:hover { color: var(--red-text); }
+
+    .divider { border: none; border-top: 0.5px solid var(--border); margin: 28px 0; }
+
+    .btn-primary { background: var(--text); color: var(--bg); font-family: 'Onest', sans-serif; font-size: 14px; font-weight: 500; padding: 12px 28px; border: none; border-radius: 8px; cursor: pointer; transition: opacity 0.15s; width: 100%; }
+    .btn-primary:hover { opacity: 0.88; }
+
+    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--surface-3); border: 0.5px solid var(--border-hover); border-radius: 8px; padding: 12px 20px; font-size: 13px; color: var(--text); display: flex; align-items: center; gap: 10px; opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 100; white-space: nowrap; }
+    .toast.show { opacity: 1; }
+    .toast.success i { color: var(--green-text); }
+    .toast.error i { color: var(--red-text); }
+
+    .output-box { background: var(--surface); border: 0.5px solid var(--border); border-radius: 8px; overflow: hidden; display: none; margin-top: 20px; }
+    .output-box.show { display: block; }
+    .ob-header { padding: 12px 16px; border-bottom: 0.5px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .ob-header span { font-size: 12px; color: var(--text-muted); }
+    .ob-copy { background: none; border: 0.5px solid var(--border); color: var(--text-muted); font-family: 'Inter', sans-serif; font-size: 11px; padding: 4px 10px; border-radius: 5px; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 5px; }
+    .ob-copy:hover { color: var(--text); border-color: var(--border-hover); }
+    .ob-body { padding: 16px; }
+    .ob-body pre { font-family: monospace; font-size: 11px; color: var(--accent); white-space: pre-wrap; word-break: break-all; max-height: 220px; overflow-y: auto; line-height: 1.6; }
+    .ob-steps { padding: 0 16px 16px; }
+    .ob-steps p { font-size: 12px; color: var(--text-muted); line-height: 1.8; }
+    .ob-steps strong { color: var(--text); }
+    .ob-steps code { background: var(--surface-2); padding: 1px 5px; border-radius: 3px; font-size: 11px; color: var(--accent); }
+
+
+ position: absolute; top: 100%; left: 0; right: 0; z-index: 20; background: var(--surface-2); border: 0.5px solid var(--border-hover); border-radius: 7px; margin-top: 4px; max-height: 220px; overflow-y: auto; }
+
+    .ranobe-option { padding: 10px 14px; font-size: 13px; color: var(--text-muted); cursor: pointer; transition: background 0.12s; border-bottom: 0.5px solid var(--border); display: flex; align-items: center; gap: 10px; }
+    .ranobe-option:last-child { border-bottom: none; }
+    .ranobe-option:hover { background: var(--surface-3); color: var(--text); }
+    .ranobe-option img { width: 24px; height: 36px; object-fit: cover; border-radius: 2px; flex-shrink: 0; }
+    .ro-placeholder { width: 24px; height: 36px; background: var(--surface-3); border-radius: 2px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+    .ro-placeholder i { font-size: 12px; color: var(--text-faint); }
+
+    @media (max-width: 600px) {
+      .form-row { grid-template-columns: 1fr; }
+      .cover-preview-wrap { flex-direction: column; }
+      .cover-preview { width: 100%; height: 160px; }
+    }
+
+    /* ── INSTRUCTION STEPS ── */
+    .instr-steps { padding: 20px; }
+    .instr-title { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 18px; letter-spacing: 0.02em; }
+    .instr-step { display: flex; gap: 14px; margin-bottom: 18px; align-items: flex-start; }
+    .instr-step:last-child { margin-bottom: 0; }
+    .step-num { width: 24px; height: 24px; border-radius: 50%; background: var(--surface-3); border: 0.5px solid var(--border-hover); color: var(--accent); font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+    .step-body { font-size: 12px; color: var(--text-muted); line-height: 1.75; flex: 1; }
+    .step-body strong { color: var(--text); }
+    .step-body code { background: var(--surface-3); padding: 1px 6px; border-radius: 3px; font-size: 11px; color: var(--accent); }
+    .step-body em { font-style: normal; }
+    .file-list { margin-top: 8px; display: flex; flex-direction: column; gap: 5px; }
+    .file-entry { font-size: 11px; color: var(--text-muted); }
+    .file-path { color: var(--green-text) !important; }
+
+    /* ── DOWNLOAD BUTTON ── */
+    .dl-section { padding: 0 20px 20px; border-top: 0.5px solid var(--border); padding-top: 16px; }
+    .btn-download { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; background: var(--surface-3); border: 0.5px solid rgba(232,224,208,0.25); color: var(--accent); font-family: 'Onest', sans-serif; font-size: 14px; font-weight: 500; padding: 13px; border-radius: 8px; cursor: pointer; transition: all 0.15s; }
+    .btn-download:hover { background: var(--accent-dim); border-color: rgba(232,224,208,0.4); }
+    .btn-download i { font-size: 18px; }
+
+    /* ── RANOBE SELECT ── */
+    .ranobe-select-wrap { position: relative; }
+    .ranobe-options { display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 20; background: var(--surface-2); border: 0.5px solid var(--border-hover); border-radius: 7px; margin-top: 4px; max-height: 220px; overflow-y: auto; }
+    .ranobe-options.open { display: block; }
+    .ranobe-option { padding: 10px 14px; font-size: 13px; color: var(--text-muted); cursor: pointer; transition: background 0.12s; border-bottom: 0.5px solid var(--border); display: flex; align-items: center; gap: 10px; }
+    .ranobe-option:last-child { border-bottom: none; }
+    .ranobe-option:hover { background: var(--surface-3); color: var(--text); }
+    .ranobe-option img { width: 24px; height: 36px; object-fit: cover; border-radius: 2px; flex-shrink: 0; }
+    .ro-placeholder { width: 24px; height: 36px; background: var(--surface-3); border-radius: 2px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+    .ro-placeholder i { font-size: 12px; color: var(--text-faint); }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════ AUTH SCREEN ══════════════ -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <svg viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="1" width="24" height="24" rx="2" stroke="#0A0A0A" stroke-width="1.5" fill="none"/>
+        <path d="M13 5C13 5 8 9 8 13.5C8 16.54 10.24 19 13 19C15.76 19 18 16.54 18 13.5C18 9 13 5 13 5Z" fill="#0A0A0A"/>
+        <path d="M13 19V22" stroke="#0A0A0A" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="auth-title">Ранобэ Архив</div>
+    <div class="auth-sub">Введи пароль для доступа к админке</div>
+    <div class="auth-input-wrap">
+      <i class="ti ti-lock"></i>
+      <input class="auth-input" type="password" id="auth-input" placeholder="Пароль" autocomplete="current-password">
+    </div>
+    <button class="auth-btn" id="auth-btn">Войти</button>
+    <div class="auth-error" id="auth-error"></div>
+  </div>
+</div>
+
+<!-- ══════════════ MAIN PAGE ══════════════ -->
+<div id="main-page">
+<div class="page">
+
+  <header>
+    <a class="logo" href="index.html">
+      <div class="logo-icon">
+        <svg viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="1" y="1" width="24" height="24" rx="2" stroke="#0A0A0A" stroke-width="1.5" fill="none"/>
+          <path d="M13 5C13 5 8 9 8 13.5C8 16.54 10.24 19 13 19C15.76 19 18 16.54 18 13.5C18 9 13 5 13 5Z" fill="#0A0A0A"/>
+          <path d="M13 19V22" stroke="#0A0A0A" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="logo-text">
+        <div class="title">Ранобэ Архив</div>
+        <div class="sub">Админка</div>
+      </div>
+    </a>
+    <div class="header-right">
+      <a href="index.html" class="back-btn"><i class="ti ti-arrow-left"></i> На сайт</a>
+      <button class="logout-btn" onclick="logout()"><i class="ti ti-logout"></i> Выйти</button>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="new">
+      <i class="ti ti-plus"></i> Новое ранобэ
+    </button>
+    <button class="tab-btn" data-tab="add">
+      <i class="ti ti-file-plus"></i> Добавить файлы
+    </button>
+  </div>
+
+  <!-- ═══ TAB 1: NEW RANOBE ═══ -->
+  <div class="tab-panel active" id="tab-new">
+
+
+
+      </div>
+
+
+    <!-- Step 0: load current data.json -->
+    <div class="form-group">
+      <label>Шаг 1 — Загрузи твой текущий data.json <span class="req">*</span></label>
+      <div class="file-drop" id="new-json-drop" style="padding:20px">
+        <input type="file" accept=".json" id="new-json-file">
+        <i class="ti ti-database-import"></i>
+        <p>Перетащи <span>data.json</span> или выбери файл</p>
+        <p style="font-size:11px;margin-top:4px;color:var(--text-faint)">Все старые записи сохранятся</p>
+      </div>
+      <p id="new-json-status" style="font-size:12px;color:var(--text-muted);margin-top:8px;"></p>
+    </div>
+
+    <hr class="divider">
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:20px;">Шаг 2 — Заполни информацию о новом ранобэ</p>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Название <span class="req">*</span></label>
+        <input type="text" id="new-title" placeholder="Бездна магии">
+      </div>
+      <div class="form-group">
+        <label>Автор <span class="req">*</span></label>
+        <input type="text" id="new-author" placeholder="Иванов Артём">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Жанры <span class="req">*</span></label>
+      <div class="genre-picker" id="new-genre-picker">
+        <button type="button" class="genre-pick-btn" data-genre="Фэнтези">Фэнтези</button>
+        <button type="button" class="genre-pick-btn" data-genre="Сёнэн">Сёнэн</button>
+        <button type="button" class="genre-pick-btn" data-genre="Романтика">Романтика</button>
+        <button type="button" class="genre-pick-btn" data-genre="Исэкай">Исэкай</button>
+        <button type="button" class="genre-pick-btn" data-genre="Мистика">Мистика</button>
+        <button type="button" class="genre-pick-btn" data-genre="Боевик">Боевик</button>
+        <button type="button" class="genre-pick-btn" data-genre="Комедия">Комедия</button>
+        <button type="button" class="genre-pick-btn" data-genre="Драма">Драма</button>
+        <button type="button" class="genre-pick-btn" data-genre="Ужасы">Ужасы</button>
+        <button type="button" class="genre-pick-btn" data-genre="Приключения">Приключения</button>
+      </div>
+      <div class="genre-custom">
+        <input type="text" id="new-genre-custom" placeholder="Свой жанр...">
+        <button type="button" onclick="addCustomGenre('new')"><i class="ti ti-plus" style="font-size:13px"></i> Добавить</button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Обложка (jpg/png)</label>
+      <div class="cover-preview-wrap">
+        <div class="cover-preview" id="new-cover-preview">
+          <img id="new-cover-img" alt="">
+          <i class="ti ti-photo"></i>
+        </div>
+        <div class="file-drop" id="new-cover-drop">
+          <input type="file" accept=".jpg,.jpeg,.png,.webp" id="new-cover-file">
+          <i class="ti ti-upload"></i>
+          <p>Перетащи или <span>выбери файл</span></p>
+          <p style="font-size:11px;margin-top:4px;color:var(--text-faint)">JPG, PNG, WEBP</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Файлы epub <span class="req">*</span></label>
+      <div class="file-drop" id="new-epub-drop">
+        <input type="file" accept=".epub" multiple id="new-epub-files">
+        <i class="ti ti-books"></i>
+        <p>Перетащи epub файлы или <span>выбери</span></p>
+        <p style="font-size:11px;margin-top:4px;color:var(--text-faint)">Можно несколько томов сразу</p>
+      </div>
+      <div class="epub-list" id="new-epub-list"></div>
+    </div>
+
+    <hr class="divider">
+    <button class="btn-primary" onclick="generateNew()">Сгенерировать и скачать data.json</button>
+
+    <div class="output-box" id="new-output">
+      <div class="dl-section">
+        <button class="btn-download" id="new-dl-btn">
+          <i class="ti ti-download"></i> Скачать готовый data.json
+        </button>
+      </div>
+      <div id="new-instr"></div>
+    </div>
+  </div>
+
+  <!-- ═══ TAB 2: ADD FILES ═══ -->
+  <div class="tab-panel" id="tab-add">
+    <h2 class="section-title">Добавить файлы в ранобэ</h2>
+    <p class="section-desc">Загрузи свой <code style="background:var(--surface-2);padding:2px 6px;border-radius:3px;font-size:12px;color:var(--accent)">data.json</code>, выбери ранобэ и добавь новые тома. Все остальные записи останутся нетронутыми.</p>
+
+    <div class="form-group">
+      <label>Загрузи твой data.json <span class="req">*</span></label>
+      <div class="file-drop" id="json-drop" style="padding:20px">
+        <input type="file" accept=".json" id="json-file">
+        <i class="ti ti-database-import"></i>
+        <p>Перетащи <span>data.json</span> или выбери файл</p>
+      </div>
+      <p id="json-status" style="font-size:12px;color:var(--text-muted);margin-top:8px;"></p>
+    </div>
+
+    <div class="form-group" id="add-ranobe-group" style="display:none">
+      <label>Выбери ранобэ <span class="req">*</span></label>
+      <div class="ranobe-select-wrap">
+        <input type="text" id="add-search-ranobe" placeholder="Начни вводить название...">
+        <div class="ranobe-options" id="ranobe-options"></div>
+      </div>
+      <p id="add-selected-info" style="font-size:12px;color:var(--text-muted);margin-top:8px;"></p>
+    </div>
+
+    <div class="form-group" id="add-files-group" style="display:none">
+      <label>Новые файлы epub <span class="req">*</span></label>
+      <div class="file-drop" id="add-epub-drop">
+        <input type="file" accept=".epub" multiple id="add-epub-files">
+        <i class="ti ti-file-plus"></i>
+        <p>Перетащи новые тома или <span>выбери</span></p>
+      </div>
+      <div class="epub-list" id="add-epub-list"></div>
+    </div>
+
+    <hr class="divider" id="add-divider" style="display:none">
+    <button class="btn-primary" id="add-generate-btn" style="display:none" onclick="generateAdd()">Сгенерировать и скачать data.json</button>
+
+    <div class="output-box" id="add-output">
+      <div class="dl-section">
+        <button class="btn-download" id="add-dl-btn">
+          <i class="ti ti-download"></i> Скачать готовый data.json
+        </button>
+      </div>
+      <div id="add-instr"></div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <i class="ti ti-check" id="toast-icon"></i>
+  <span id="toast-msg"></span>
+</div>
+
+<script>
+  // ══════════════ AUTH ══════════════
+  const CORRECT = 'liyami01';
+  const SESSION_KEY = 'ra_auth';
+
+  function checkAuth() {
+    if (sessionStorage.getItem(SESSION_KEY) === '1') {
+      showMain();
+    }
+  }
+
+  function showMain() {
+    document.getElementById('auth-screen').classList.add('gone');
+    document.getElementById('main-page').classList.add('visible');
+  }
+
+  function logout() {
+    sessionStorage.removeItem(SESSION_KEY);
+    document.getElementById('auth-screen').classList.remove('gone');
+    document.getElementById('main-page').classList.remove('visible');
+    document.getElementById('auth-input').value = '';
+    document.getElementById('auth-error').textContent = '';
+  }
+
+  function tryLogin() {
+    const input = document.getElementById('auth-input');
+    const err = document.getElementById('auth-error');
+    if (input.value === CORRECT) {
+      sessionStorage.setItem(SESSION_KEY, '1');
+      err.textContent = '';
+      showMain();
+    } else {
+      err.textContent = 'Неверный пароль';
+      input.classList.add('shake');
+      input.value = '';
+      setTimeout(() => input.classList.remove('shake'), 400);
+    }
+  }
+
+  document.getElementById('auth-btn').addEventListener('click', tryLogin);
+  document.getElementById('auth-input').addEventListener('keydown', e => { if (e.key === 'Enter') tryLogin(); });
+
+  checkAuth();
+
+  // ══════════════ TABS ══════════════
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  // ══════════════ TOAST ══════════════
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    const icon = document.getElementById('toast-icon');
+    t.className = 'toast ' + type;
+    icon.className = 'ti ' + (type === 'success' ? 'ti-check' : 'ti-alert-circle');
+    document.getElementById('toast-msg').textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  // ══════════════ GENRES ══════════════
+  document.getElementById('new-genre-picker').addEventListener('click', e => {
+    const btn = e.target.closest('.genre-pick-btn');
+    if (btn) btn.classList.toggle('selected');
+  });
+
+  function addCustomGenre(prefix) {
+    const input = document.getElementById(prefix + '-genre-custom');
+    const val = input.value.trim();
+    if (!val) return;
+    const picker = document.getElementById(prefix + '-genre-picker');
+    const exists = [...picker.querySelectorAll('.genre-pick-btn')].some(b => b.dataset.genre === val);
+    if (!exists) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'genre-pick-btn selected';
+      btn.dataset.genre = val;
+      btn.textContent = val;
+      picker.appendChild(btn);
+    } else {
+      picker.querySelector(`[data-genre="${val}"]`).classList.add('selected');
+    }
+    input.value = '';
+  }
+  document.getElementById('new-genre-custom').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addCustomGenre('new'); } });
+
+  // ══════════════ COVER PREVIEW ══════════════
+  document.getElementById('new-cover-file').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const img = document.getElementById('new-cover-img');
+    img.src = URL.createObjectURL(file);
+    img.style.display = 'block';
+    document.querySelector('#new-cover-preview i').style.display = 'none';
+  });
+
+  // ══════════════ EPUB LISTS ══════════════
+  let newEpubFiles = [];
+  let addEpubFiles = [];
+
+  function guessVolName(filename) {
+    const m = filename.match(/(\d+)/);
+    if (m) return 'Том ' + m[1] + '.epub';
+    return filename;
+  }
+
+  function formatSize(bytes) {
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' КБ';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' МБ';
+  }
+
+  function renderEpubList(prefix) {
+    const list = document.getElementById(prefix + '-epub-list');
+    const files = prefix === 'new' ? newEpubFiles : addEpubFiles;
+    list.innerHTML = '';
+    files.forEach((item, i) => {
+      const div = document.createElement('div');
+      div.className = 'epub-item';
+      div.innerHTML = `
+        <i class="ti ti-file"></i>
+        <span class="ei-name">${item.file.name}</span>
+        <span class="ei-size">${formatSize(item.file.size)}</span>
+        <div class="ei-vol"><input type="text" value="${item.volName}" placeholder="Том 1.epub"></div>
+        <button class="ei-remove"><i class="ti ti-x"></i></button>
+      `;
+      div.querySelector('.ei-vol input').addEventListener('input', e => { files[i].volName = e.target.value; });
+      div.querySelector('.ei-remove').addEventListener('click', () => { files.splice(i, 1); renderEpubList(prefix); });
+      list.appendChild(div);
+    });
+  }
+
+  document.getElementById('new-epub-files').addEventListener('change', e => {
+    [...e.target.files].forEach(f => { if (!newEpubFiles.find(x => x.file.name === f.name)) newEpubFiles.push({ file: f, volName: guessVolName(f.name) }); });
+    renderEpubList('new');
+  });
+
+  document.getElementById('add-epub-files').addEventListener('change', e => {
+    [...e.target.files].forEach(f => { if (!addEpubFiles.find(x => x.file.name === f.name)) addEpubFiles.push({ file: f, volName: guessVolName(f.name) }); });
+    renderEpubList('add');
+  });
+
+  function setupDrop(dropId, inputId) {
+    const drop = document.getElementById(dropId);
+    if (!drop) return;
+    drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('dragging'); });
+    drop.addEventListener('dragleave', () => drop.classList.remove('dragging'));
+    drop.addEventListener('drop', e => {
+      e.preventDefault(); drop.classList.remove('dragging');
+      const input = document.getElementById(inputId);
+      const dt = new DataTransfer();
+      [...e.dataTransfer.files].forEach(f => dt.items.add(f));
+      input.files = dt.files;
+      input.dispatchEvent(new Event('change'));
+    });
+  }
+
+  setupDrop('new-epub-drop', 'new-epub-files');
+  setupDrop('new-cover-drop', 'new-cover-file');
+  setupDrop('add-epub-drop', 'add-epub-files');
+  setupDrop('json-drop', 'json-file');
+
+  // ══════════════ SLUG ══════════════
+  function toSlug(title) {
+    const map = {'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'yo','ж':'zh','з':'z','и':'i','й':'j','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'kh','ц':'ts','ч':'ch','ш':'sh','щ':'sch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya'};
+    return title.toLowerCase().split('').map(c => map[c] || (c.match(/[a-z0-9]/) ? c : '-')).join('').replace(/-+/g, '-').replace(/^-|-$/g, '');
+  }
+
+  // ══════════════ SHARED: load data.json for BOTH tabs ══════════════
+  let loadedData = null;      // loaded from user's uploaded data.json
+  let selectedRanobe = null;
+  let newJsonData = null;     // tab1: current data.json loaded for merging
+
+  function loadJsonFile(file, onSuccess) {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const parsed = JSON.parse(ev.target.result);
+        if (!parsed.ranobe) throw new Error();
+        onSuccess(parsed);
+      } catch {
+        showToast('Неверный формат data.json', 'error');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  // ══════════════ TAB 1: load existing data.json before adding new ranobe ══════════════
+  document.getElementById('new-json-file').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    loadJsonFile(file, parsed => {
+      newJsonData = parsed;
+      document.getElementById('new-json-status').innerHTML =
+        `<i class="ti ti-check" style="color:var(--green-text)"></i> Загружено: ${parsed.ranobe.length} записей — все они сохранятся`;
+    });
+  });
+  setupDrop('new-json-drop', 'new-json-file');
+
+  // ══════════════ GENERATE NEW ══════════════
+  function generateNew() {
+    const title = document.getElementById('new-title').value.trim();
+    const author = document.getElementById('new-author').value.trim();
+    const genres = [...document.querySelectorAll('#new-genre-picker .genre-pick-btn.selected')].map(b => b.dataset.genre);
+    const coverFile = document.getElementById('new-cover-file').files[0];
+
+    if (!newJsonData) { showToast('Сначала загрузи data.json', 'error'); return; }
+    if (!title) { showToast('Введи название', 'error'); return; }
+    if (!author) { showToast('Введи автора', 'error'); return; }
+    if (!genres.length) { showToast('Выбери хотя бы один жанр', 'error'); return; }
+    if (!newEpubFiles.length) { showToast('Добавь хотя бы один epub файл', 'error'); return; }
+
+    const slug = toSlug(title);
+    const coverExt = coverFile ? coverFile.name.split('.').pop() : 'jpg';
+    const coverPath = coverFile ? `covers/${slug}.${coverExt}` : '';
+
+    const newEntry = {
+      id: Date.now(),
+      title, author, genres,
+      cover: coverPath,
+      files: newEpubFiles.map(item => ({
+        name: item.volName,
+        size: formatSize(item.file.size),
+        url: `files/${slug}/${item.volName}`
+      }))
+    };
+
+    // Merge: keep ALL old entries untouched, add new one, sort alphabetically
+    const merged = {
+      ranobe: [...newJsonData.ranobe, newEntry]
+        .sort((a, b) => a.title.localeCompare(b.title, 'ru'))
+    };
+
+    const jsonText = JSON.stringify(merged, null, 2);
+
+    // Build step-by-step instructions
+    let steps = `<div class="instr-steps">
+      <div class="instr-title">📋 Пошаговая инструкция</div>`;
+
+    steps += `
+      <div class="instr-step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>Скачай готовый data.json</strong> — нажми кнопку ниже. Он уже содержит все твои старые записи + новое ранобэ «${title}», отсортированное по алфавиту.
+        </div>
+      </div>`;
+
+    steps += `
+      <div class="instr-step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>Замени файл на GitHub</strong><br>
+          Зайди в репозиторий → кликни на <code>data.json</code> → нажми иконку карандаша ✏️ → нажми <code>...</code> → <strong>«Delete file»</strong>, затем загрузи новый через <strong>Add file → Upload files</strong>.<br>
+          <em style="color:var(--text-faint)">Или: открой data.json → карандаш → выдели всё (Ctrl+A) → вставь новый текст → Commit changes.</em>
+        </div>
+      </div>`;
+
+    if (coverFile) {
+      steps += `
+      <div class="instr-step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>Загрузи обложку</strong><br>
+          В репозитории → папка <code>covers/</code> → <strong>Add file → Upload files</strong><br>
+          Переименуй файл в: <code class="file-path">covers/${slug}.${coverExt}</code>
+        </div>
+      </div>`;
+    }
+
+    const epubStep = coverFile ? 4 : 3;
+    steps += `
+      <div class="instr-step">
+        <div class="step-num">${epubStep}</div>
+        <div class="step-body">
+          <strong>Загрузи epub файлы</strong><br>
+          В репозитории нажми <strong>Add file → Upload files</strong>, в поле пути введи <code>files/${slug}/</code> и загрузи файлы со следующими именами:
+          <div class="file-list">
+            ${newEpubFiles.map(item => `<div class="file-entry">📄 переименуй <code>${item.file.name}</code> → <code class="file-path">${item.volName}</code></div>`).join('')}
+          </div>
+        </div>
+      </div>`;
+
+    const doneStep = epubStep + 1;
+    steps += `
+      <div class="instr-step">
+        <div class="step-num">${doneStep}</div>
+        <div class="step-body">
+          <strong>Готово!</strong> Через ~30 секунд ранобэ появится на сайте, отсортированное по алфавиту.
+        </div>
+      </div>
+    </div>`;
+
+    document.getElementById('new-instr').innerHTML = steps;
+    document.getElementById('new-output').classList.add('show');
+    document.getElementById('new-output').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    // Store for download
+    document.getElementById('new-dl-btn').onclick = () => downloadJson(jsonText, 'data.json');
+
+    showToast('Готово! Скачай data.json 👇');
+  }
+
+  // ══════════════ TAB 2: load existing data.json ══════════════
+  document.getElementById('json-file').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    loadJsonFile(file, parsed => {
+      loadedData = parsed;
+      document.getElementById('json-status').innerHTML =
+        `<i class="ti ti-check" style="color:var(--green-text)"></i> Загружено: ${parsed.ranobe.length} ранобэ`;
+      document.getElementById('add-ranobe-group').style.display = 'block';
+      renderRanobeOptions('');
+    });
+  });
+
+  const addSearchInput = document.getElementById('add-search-ranobe');
+  const ranobeOptions = document.getElementById('ranobe-options');
+
+  addSearchInput.addEventListener('focus', () => ranobeOptions.classList.add('open'));
+  addSearchInput.addEventListener('input', () => { renderRanobeOptions(addSearchInput.value); ranobeOptions.classList.add('open'); });
+  document.addEventListener('click', e => { if (!e.target.closest('.ranobe-select-wrap')) ranobeOptions.classList.remove('open'); });
+
+  function renderRanobeOptions(query) {
+    if (!loadedData) return;
+    const q = query.toLowerCase();
+    const filtered = loadedData.ranobe.filter(r => r.title.toLowerCase().includes(q));
+    ranobeOptions.innerHTML = '';
+    if (!filtered.length) {
+      ranobeOptions.innerHTML = '<div class="ranobe-option" style="cursor:default;color:var(--text-faint)">Ничего не найдено</div>';
+      return;
+    }
+    filtered.forEach(r => {
+      const div = document.createElement('div');
+      div.className = 'ranobe-option';
+      const thumb = r.cover ? `<img src="${r.cover}" alt="">` : `<div class="ro-placeholder"><i class="ti ti-book-2"></i></div>`;
+      div.innerHTML = `${thumb}<span>${r.title}</span>`;
+      div.addEventListener('click', () => {
+        selectedRanobe = r;
+        addSearchInput.value = r.title;
+        ranobeOptions.classList.remove('open');
+        document.getElementById('add-selected-info').textContent =
+          `${r.author ? r.author + ' · ' : ''}${(r.files||[]).length} файлов · ${(r.genres||[]).join(', ')}`;
+        document.getElementById('add-files-group').style.display = 'block';
+        document.getElementById('add-divider').style.display = 'block';
+        document.getElementById('add-generate-btn').style.display = 'block';
+      });
+      ranobeOptions.appendChild(div);
+    });
+  }
+
+  // ══════════════ GENERATE ADD ══════════════
+  function generateAdd() {
+    if (!selectedRanobe) { showToast('Выбери ранобэ', 'error'); return; }
+    if (!addEpubFiles.length) { showToast('Добавь хотя бы один epub файл', 'error'); return; }
+
+    const slug = toSlug(selectedRanobe.title);
+    const newFiles = addEpubFiles.map(item => ({
+      name: item.volName,
+      size: formatSize(item.file.size),
+      url: `files/${slug}/${item.volName}`
+    }));
+
+    // Merge: replace only selected ranobe's files, keep everything else exactly as-is
+    const updatedEntry = { ...selectedRanobe, files: [...(selectedRanobe.files || []), ...newFiles] };
+    const merged = {
+      ranobe: loadedData.ranobe.map(r => r.id === selectedRanobe.id ? updatedEntry : r)
+    };
+
+    const jsonText = JSON.stringify(merged, null, 2);
+
+    let steps = `<div class="instr-steps">
+      <div class="instr-title">📋 Пошаговая инструкция</div>
+      <div class="instr-step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>Скачай готовый data.json</strong> — нажми кнопку ниже. Все записи сохранены, в «${selectedRanobe.title}» добавлены новые файлы.
+        </div>
+      </div>
+      <div class="instr-step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>Замени файл на GitHub</strong><br>
+          Зайди в репо → кликни <code>data.json</code> → карандаш ✏️ → выдели всё (<code>Ctrl+A</code>) → вставь новый текст → нажми <strong>Commit changes</strong>.
+        </div>
+      </div>
+      <div class="instr-step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>Загрузи новые epub файлы</strong><br>
+          В репо: папка <code>files/${slug}/</code> → <strong>Add file → Upload files</strong>
+          <div class="file-list">
+            ${addEpubFiles.map(item => `<div class="file-entry">📄 переименуй <code>${item.file.name}</code> → <code class="file-path">${item.volName}</code></div>`).join('')}
+          </div>
+        </div>
+      </div>
+      <div class="instr-step">
+        <div class="step-num">4</div>
+        <div class="step-body"><strong>Готово!</strong> Новые тома появятся на сайте через ~30 секунд.</div>
+      </div>
+    </div>`;
+
+    document.getElementById('add-instr').innerHTML = steps;
+    document.getElementById('add-output').classList.add('show');
+    document.getElementById('add-output').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    document.getElementById('add-dl-btn').onclick = () => downloadJson(jsonText, 'data.json');
+
+    showToast('Готово! Скачай data.json 👇');
+  }
+
+  // ══════════════ DOWNLOAD JSON ══════════════
+  function downloadJson(text, filename) {
+    const blob = new Blob([text], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('data.json скачан!');
+  }
+
+  // ══════════════ COPY (kept for reference) ══════════════
+  function copyOutput(preId) {
+    const text = document.getElementById(preId).textContent;
+    navigator.clipboard.writeText(text)
+      .then(() => showToast('Скопировано!'))
+      .catch(() => { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); showToast('Скопировано!'); });
+  }
+</script>
+</body>
+</html>
